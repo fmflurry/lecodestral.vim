@@ -1,0 +1,120 @@
+*lecodestral.txt*  Inline ghost-text autocomplete for Vim 9 via Mistral Codestral
+
+Author:  Florian Michel (fmflurry)
+License: MIT
+
+==============================================================================
+CONTENTS                                                  *lecodestral-contents*
+
+  1. Introduction ........................... |lecodestral-introduction|
+  2. Requirements ........................... |lecodestral-requirements|
+  3. Setup .................................. |lecodestral-setup|
+  4. Usage .................................. |lecodestral-usage|
+  5. Commands ............................... |lecodestral-commands|
+  6. Configuration .......................... |lecodestral-config|
+  7. Highlighting ........................... |lecodestral-highlight|
+  8. Limitations ............................ |lecodestral-limitations|
+
+==============================================================================
+1. INTRODUCTION                                       *lecodestral-introduction*
+
+lecodestral.vim provides Copilot-style inline ghost-text autocomplete for
+classic Vim 9, powered by Mistral Codestral through its fill-in-the-middle
+(FIM) endpoint. It uses native virtual text (|textprop|) and async jobs
+(|job|); it needs no Neovim and no Node, only `curl`.
+
+==============================================================================
+2. REQUIREMENTS                                       *lecodestral-requirements*
+
+- Vim 9.0.0067+ with |+textprop| and |+job|
+  Check with: >
+      :echo has('patch-9.0.0067') && has('textprop') && has('job')
+<
+- `curl` on $PATH
+- A Codestral API key (free tier at https://console.mistral.ai)
+
+==============================================================================
+3. SETUP                                                     *lecodestral-setup*
+
+Export your API key in the shell that launches Vim: >
+
+      export CODESTRAL_API_KEY="your-key-here"
+<
+The variable name is configurable, see |g:lecodestral_api_key_env|.
+
+==============================================================================
+4. USAGE                                                     *lecodestral-usage*
+
+Type in insert mode. After a short debounce a grey suggestion appears after
+the cursor. Press <Tab> to accept it, or <C-]> to dismiss. When no suggestion
+is visible, <Tab> behaves normally (real tab, or popup-menu navigation).
+
+==============================================================================
+5. COMMANDS                                               *lecodestral-commands*
+
+                                                              *:LeCodestralToggle*
+:LeCodestralToggle      Enable or disable suggestions for the session.
+
+                                                             *:LeCodestralDismiss*
+:LeCodestralDismiss     Clear the currently displayed suggestion.
+
+==============================================================================
+6. CONFIGURATION                                            *lecodestral-config*
+
+Set these before the plugin loads (e.g. in your vimrc).
+
+                                                          *g:lecodestral_enabled*
+g:lecodestral_enabled        (default v:true)
+        Start with suggestions enabled.
+
+                                                            *g:lecodestral_model*
+g:lecodestral_model          (default "codestral-latest")
+
+                                                      *g:lecodestral_debounce_ms*
+g:lecodestral_debounce_ms    (default 150)
+        Idle time in ms after a keystroke before a request fires.
+
+                                                       *g:lecodestral_max_tokens*
+g:lecodestral_max_tokens     (default 256)
+
+                                                       *g:lecodestral_max_prefix*
+g:lecodestral_max_prefix     (default 4000)
+        Max bytes of pre-cursor context sent as the FIM prompt.
+
+                                                       *g:lecodestral_max_suffix*
+g:lecodestral_max_suffix     (default 2000)
+        Max bytes of post-cursor context sent as the FIM suffix.
+
+                                                      *g:lecodestral_temperature*
+g:lecodestral_temperature    (default 0.2)
+
+                                                       *g:lecodestral_accept_key*
+g:lecodestral_accept_key     (default "<Tab>")
+        Insert-mode key mapped to accept a suggestion.
+
+                                                      *g:lecodestral_api_key_env*
+g:lecodestral_api_key_env    (default "CODESTRAL_API_KEY")
+        Name of the environment variable holding the API key.
+
+                                                         *g:lecodestral_endpoint*
+g:lecodestral_endpoint
+        (default "https://codestral.mistral.ai/v1/fim/completions")
+
+==============================================================================
+7. HIGHLIGHTING                                          *lecodestral-highlight*
+
+                                                            *hl-LeCodestralGhost*
+Ghost text uses the LeCodestralGhost highlight group, linked to Comment by
+default. Override it: >
+
+      highlight LeCodestralGhost ctermfg=245 guifg=#6c7086
+<
+==============================================================================
+8. LIMITATIONS                                         *lecodestral-limitations*
+
+- Free Codestral keys are rate-limited.
+- No streaming; one request per debounce window.
+- Suggestions only appear in insert mode.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
