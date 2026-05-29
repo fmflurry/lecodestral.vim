@@ -5,3 +5,8 @@ doc/tags
 *.swp
 *.swo
 .DS_Store
+
+# code-memory / rtk local stores
+data/
+*.sqlite
+*.db

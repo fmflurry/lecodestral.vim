@@ -1,11 +1,24 @@
-# lecodestral.vim
+<h1 align="center">lecodestral.vim</h1>
 
-Copilot-style **inline ghost-text autocomplete** for **classic Vim 9**, powered by
-Mistral [**Codestral**](https://mistral.ai/news/codestral/) via its fill-in-the-middle
-(FIM) endpoint. No Neovim, no Node, no dependencies beyond `curl`.
+<p align="center">
+  <em>Copilot-style inline ghost-text autocomplete for <strong>classic Vim 9</strong>,<br/>
+  powered by Mistral <a href="https://mistral.ai/news/codestral/">Codestral</a>.</em>
+</p>
 
-> Most LLM autocomplete plugins are Neovim-only. This one targets plain Vim 9
-> using native `+textprop` virtual text and async `+job`.
+<p align="center">
+  <img src="https://img.shields.io/badge/Vim-9.0%2B-019733?logo=vim&logoColor=white" alt="Vim 9.0+"/>
+  <img src="https://img.shields.io/badge/Mistral-Codestral-ff8c42?logo=mistralai&logoColor=white" alt="Mistral Codestral"/>
+  <img src="https://img.shields.io/badge/deps-just%20curl-7dcfff" alt="Dependencies: just curl"/>
+  <img src="https://img.shields.io/badge/License-MIT-ff8c42.svg" alt="License: MIT"/>
+</p>
+
+<p align="center">
+  <img src="assets/hero.png" alt="lecodestral.vim — a Vim terminal streaming ghost-text completions from an origami Mistral fox" width="820"/>
+</p>
+
+<p align="center">
+  <em>No Neovim. No Node. Native <code>+textprop</code> virtual text + async <code>+job</code> — nothing but <code>curl</code>.</em>
+</p>
 
 ## Features
 
