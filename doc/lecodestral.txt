@@ -77,16 +77,33 @@ g:lecodestral_debounce_ms    (default 150)
                                                        *g:lecodestral_max_tokens*
 g:lecodestral_max_tokens     (default 256)
 
+                                                        *g:lecodestral_max_lines*
+g:lecodestral_max_lines      (default 3)
+        Maximum number of lines shown in a single ghost-text suggestion.
+        The model often keeps generating well past the useful completion,
+        and those trailing lines tend to hallucinate; capping the suggestion
+        to the first few lines keeps quality high. Set to 0 to disable the
+        cap and show the full response.
+
                                                        *g:lecodestral_max_prefix*
-g:lecodestral_max_prefix     (default 4000)
-        Max bytes of pre-cursor context sent as the FIM prompt.
+g:lecodestral_max_prefix     (default 8000)
+        Max bytes of pre-cursor context sent as the FIM prompt. When the
+        prefix is trimmed, it is realigned to the next line boundary so the
+        prompt never begins mid-line.
 
                                                        *g:lecodestral_max_suffix*
-g:lecodestral_max_suffix     (default 2000)
-        Max bytes of post-cursor context sent as the FIM suffix.
+g:lecodestral_max_suffix     (default 4000)
+        Max bytes of post-cursor context sent as the FIM suffix. When the
+        suffix is trimmed, it is realigned to the previous line boundary so
+        the suffix never ends mid-line.
 
                                                       *g:lecodestral_temperature*
 g:lecodestral_temperature    (default 0.2)
+
+                                                             *g:lecodestral_stop*
+g:lecodestral_stop           (default ["\n\n\n"])
+        List of stop sequences sent to the FIM endpoint. Guards against
+        runaway multi-block completions. Set to [] to disable.
 
                                                        *g:lecodestral_accept_key*
 g:lecodestral_accept_key     (default "<Tab>")
