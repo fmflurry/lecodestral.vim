@@ -19,6 +19,7 @@ let s:ghost_active = 0
 let s:timer_id = -1
 let s:cur_job = v:null
 let s:job_chunks = []
+let s:gen = 0
 let s:req_lnum = 0
 let s:req_col = 0
 let s:req_buf = 0
@@ -52,16 +53,23 @@ function! s:render_ghost(lines) abort
   let s:ghost_active = 1
 endfunction
 
-function! s:on_out(ch, msg) abort
+function! s:on_out(gen, ch, msg) abort
+  if a:gen != s:gen
+    return
+  endif
   call add(s:job_chunks, a:msg)
 endfunction
 
-function! s:on_err(ch, msg) abort
+function! s:on_err(gen, ch, msg) abort
   call s:log('ERR ' . a:msg)
 endfunction
 
-function! s:finish(job, status) abort
-  call s:log('finish status=' . a:status . ' chunks=' . len(s:job_chunks))
+function! s:finish(gen, ch) abort
+  if a:gen != s:gen
+    call s:log('bail: stale job gen=' . a:gen . ' cur=' . s:gen)
+    return
+  endif
+  call s:log('finish chunks=' . len(s:job_chunks))
   if bufnr('%') != s:req_buf || line('.') != s:req_lnum || col('.') != s:req_col
     call s:log('bail: cursor moved (buf/lnum/col mismatch)')
     return
@@ -182,12 +190,14 @@ function! s:trigger(...) abort
         \ '-d', l:body]
 
   call s:log('POST body=' . strlen(l:body) . 'B prefix=' . strlen(l:prefix) . ' suffix=' . strlen(l:suffix))
+  let s:gen += 1
+  let l:gen = s:gen
   let s:job_chunks = []
   let s:cur_job = job_start(l:argv, {
         \ 'out_mode': 'raw',
-        \ 'out_cb': function('s:on_out'),
-        \ 'err_cb': function('s:on_err'),
-        \ 'exit_cb': function('s:finish'),
+        \ 'out_cb': function('s:on_out', [l:gen]),
+        \ 'err_cb': function('s:on_err', [l:gen]),
+        \ 'close_cb': function('s:finish', [l:gen]),
         \ })
 endfunction
 
