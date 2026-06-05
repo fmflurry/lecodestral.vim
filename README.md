@@ -20,6 +20,12 @@
   <em>No Neovim. No Node. Native <code>+textprop</code> virtual text + async <code>+job</code> — nothing but <code>curl</code>.</em>
 </p>
 
+> [!NOTE]
+> **Looking for a fully local, no-API-key alternative?** Check out the sister project
+> **[leollama.vim](https://github.com/fmflurry/leollama.vim)** — same Vim ghost-text
+> autocomplete, but powered entirely by a **local [Ollama](https://ollama.com) + Qwen**
+> model. No subscription, no API key, no hidden fees — everything runs on your machine.
+
 ## Features
 
 - Grey inline ghost text after the cursor, Copilot-style
