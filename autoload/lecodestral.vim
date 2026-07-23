@@ -15,6 +15,8 @@ endfunction
 
 let s:enabled = s:get('enabled', 1)
 let s:ghost_lines = []
+let s:ghost_choices = []
+let s:ghost_idx = 0
 let s:ghost_active = 0
 let s:timer_id = -1
 let s:cur_job = v:null
@@ -60,11 +62,26 @@ function! s:on_out(gen, ch, msg) abort
   call add(s:job_chunks, a:msg)
 endfunction
 
+function! lecodestral#cycle_suggestions(offset) abort
+  " Cycle to next/prev suggestion (offset +1 or -1). Returns 0 on success.
+  if empty(s:ghost_choices)
+    echo 'LeCodestral no suggestions'
+    return 1
+  endif
+  let l:n = len(s:ghost_choices)
+  let s:ghost_idx = (s:ghost_idx + a:offset + l:n) % l:n
+  call s:render_ghost(s:ghost_choices[s:ghost_idx])
+  echo 'LeCodestral suggestion ' . (s:ghost_idx + 1) . '/' . l:n
+  return 0
+endfunction
+
 function! s:on_err(gen, ch, msg) abort
   call s:log('ERR ' . a:msg)
 endfunction
 
 function! s:finish(gen, ch) abort
+  let s:ghost_choices = []
+  let s:ghost_idx = 0
   if a:gen != s:gen
     call s:log('bail: stale job gen=' . a:gen . ' cur=' . s:gen)
     return
@@ -93,22 +110,28 @@ function! s:finish(gen, ch) abort
     call s:log('bail: no choices. raw=' . l:raw[0:300])
     return
   endif
-  let l:ch0 = l:data.choices[0]
-  let l:text = ''
-  if has_key(l:ch0, 'message') && type(l:ch0.message) == v:t_dict && has_key(l:ch0.message, 'content')
-    let l:text = l:ch0.message.content
-  elseif has_key(l:ch0, 'text')
-    let l:text = l:ch0.text
-  endif
-  if l:text ==# ''
+  let l:maxl = s:get('max_lines', 3)
+  for l:choice in l:data.choices
+    let l:text = ''
+    if has_key(l:choice, 'message') && type(l:choice.message) == v:t_dict && has_key(l:choice.message, 'content')
+      let l:text = l:choice.message.content
+    elseif has_key(l:choice, 'text')
+      let l:text = l:choice.text
+    endif
+    if l:text ==# ''
+      continue
+    endif
+    let l:lines = split(l:text, "\n", 1)
+    if l:maxl > 0 && len(l:lines) > l:maxl
+      let l:lines = l:lines[0 : l:maxl - 1]
+    endif
+    call add(s:ghost_choices, l:lines)
+  endfor
+  if empty(s:ghost_choices)
     return
   endif
-  let l:lines = split(l:text, "\n", 1)
-  let l:maxl = s:get('max_lines', 3)
-  if l:maxl > 0 && len(l:lines) > l:maxl
-    let l:lines = l:lines[0 : l:maxl - 1]
-  endif
-  call s:render_ghost(l:lines)
+  let s:ghost_idx = 0
+  call lecodestral#cycle_suggestions(0)
 endfunction
 
 function! s:trigger(...) abort
@@ -177,6 +200,7 @@ function! s:trigger(...) abort
         \ 'max_tokens': s:get('max_tokens', 256),
         \ 'temperature': s:get('temperature', 0.2),
         \ 'stream': v:false,
+        \ 'n': s:get('choices', 3),
         \ }
   let l:stop = s:get('stop', ["\n\n\n"])
   if type(l:stop) == v:t_list && !empty(l:stop)
@@ -218,6 +242,8 @@ endfunction
 
 function! lecodestral#dismiss() abort
   call s:clear_ghost()
+  let s:ghost_choices = []
+  let s:ghost_idx = 0
 endfunction
 
 function! lecodestral#toggle() abort
@@ -229,7 +255,7 @@ function! lecodestral#toggle() abort
 endfunction
 
 function! lecodestral#accept() abort
-  if !s:ghost_active
+  if empty(s:ghost_choices) && !s:ghost_active
     if pumvisible()
       call feedkeys("\<C-n>", 'n')
     else
@@ -237,7 +263,9 @@ function! lecodestral#accept() abort
     endif
     return
   endif
-  let l:lines = copy(s:ghost_lines)
+  let l:lines = copy(s:ghost_choices[s:ghost_idx])
+  let s:ghost_choices = []
+  let s:ghost_idx = 0
   call s:clear_ghost()
   let l:lnum = line('.')
   let l:c = col('.')
