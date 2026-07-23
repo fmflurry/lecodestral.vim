@@ -94,7 +94,7 @@ let g:lecodestral_temperature = 0.2
 let g:lecodestral_stop        = ["\n\n\n"]
 let g:lecodestral_accept_key  = '<Tab>'
 let g:lecodestral_api_key_env = 'CODESTRAL_API_KEY'
-let g:lecodestral_endpoint    = 'https://codestral.mistral.ai/v1/fim/completions'
+let g:lecodestral_endpoint    = 'https://api.mistral.ai/v1/fim/completions'
 ```
 
 Ghost text uses the `LeCodestralGhost` highlight group (links to `Comment` by default):

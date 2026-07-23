@@ -1,7 +1,7 @@
 " lecodestral.vim — autoload engine. Functions here are globally addressable
 " (lecodestral#...), lazy-loaded, and stable across plugin re-sourcing.
 
-let s:default_endpoint = 'https://codestral.mistral.ai/v1/fim/completions'
+let s:default_endpoint = 'https://api.mistral.ai/v1/fim/completions'
 
 function! s:get(key, default) abort
   return get(g:, 'lecodestral_' . a:key, a:default)
