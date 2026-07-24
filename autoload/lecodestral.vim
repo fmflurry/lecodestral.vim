@@ -26,6 +26,7 @@ let s:req_lnum = 0
 let s:req_col = 0
 let s:req_buf = 0
 let s:warned_key = 0
+let s:expand = v:false
 
 function! s:clear_ghost() abort
   if s:ghost_active
@@ -62,7 +63,12 @@ function! s:on_out(gen, ch, msg) abort
   call add(s:job_chunks, a:msg)
 endfunction
 
-function! lecodestral#cycle_suggestions(offset) abort
+function! lecodestral#expand() abort
+	let s:expand = !s:expand
+	call lecodestral#cycle(0)
+endfunction
+
+function! lecodestral#cycle(offset) abort
   " Cycle to next/prev suggestion (offset +1 or -1). Returns 0 on success.
   if empty(s:ghost_choices)
     echo 'LeCodestral no suggestions'
@@ -70,7 +76,12 @@ function! lecodestral#cycle_suggestions(offset) abort
   endif
   let l:n = len(s:ghost_choices)
   let s:ghost_idx = (s:ghost_idx + a:offset + l:n) % l:n
-  call s:render_ghost(s:ghost_choices[s:ghost_idx])
+  let l:maxl = s:expand ? -1 : s:get('max_lines', 3)
+  let l:lines = s:ghost_choices[s:ghost_idx]
+  if l:maxl > 0
+    let l:lines = l:lines[0 : min([l:maxl, l:lines->len()]) - 1]
+  endif
+  call s:render_ghost(l:lines)
   echo 'LeCodestral suggestion ' . (s:ghost_idx + 1) . '/' . l:n
   return 0
 endfunction
@@ -110,7 +121,7 @@ function! s:finish(gen, ch) abort
     call s:log('bail: no choices. raw=' . l:raw[0:300])
     return
   endif
-  let l:maxl = s:get('max_lines', 3)
+  let l:texts = []
   for l:choice in l:data.choices
     let l:text = ''
     if has_key(l:choice, 'message') && type(l:choice.message) == v:t_dict && has_key(l:choice.message, 'content')
@@ -118,20 +129,17 @@ function! s:finish(gen, ch) abort
     elseif has_key(l:choice, 'text')
       let l:text = l:choice.text
     endif
-    if l:text ==# ''
+    if l:text ==# '' || l:texts->index(l:text) >= 0
       continue
     endif
+    call add(l:texts, l:text)
     let l:lines = split(l:text, "\n", 1)
-    if l:maxl > 0 && len(l:lines) > l:maxl
-      let l:lines = l:lines[0 : l:maxl - 1]
-    endif
     call add(s:ghost_choices, l:lines)
   endfor
   if empty(s:ghost_choices)
     return
   endif
-  let s:ghost_idx = 0
-  call lecodestral#cycle_suggestions(0)
+  call lecodestral#cycle(0)
 endfunction
 
 function! s:trigger(...) abort
@@ -229,15 +237,15 @@ function! lecodestral#on_change() abort
   if !s:enabled
     return
   endif
+  return lecodestral#complete()
+endfunction
+" Trigger completion (force if not enabled?)
+function! lecodestral#complete() abort
   call s:clear_ghost()
   if s:timer_id != -1
     call timer_stop(s:timer_id)
   endif
   let s:timer_id = timer_start(s:get('debounce_ms', 150), function('s:trigger'))
-endfunction
-
-function! lecodestral#on_leave() abort
-  call s:clear_ghost()
 endfunction
 
 function! lecodestral#dismiss() abort
@@ -263,9 +271,7 @@ function! lecodestral#accept() abort
     endif
     return
   endif
-  let l:lines = copy(s:ghost_choices[s:ghost_idx])
-  let s:ghost_choices = []
-  let s:ghost_idx = 0
+  let l:lines = s:ghost_lines
   call s:clear_ghost()
   let l:lnum = line('.')
   let l:c = col('.')
