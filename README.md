@@ -78,18 +78,17 @@ Completion suggestions appear after typing in insert mode.
 ### `<Plug>` mappings
 - `<Plug>(lecodestral-accept)`: Accept suggestion
 - `<Plug>(lecodestral-dismiss)`: Dismiss suggestion
-- `<Plug>(lecodestral-cycle-next)`: Cycle to next suggestion
-- `<Plug>(lecodestral-cycle-prev)`: Cycle to previous suggestion
-- `<Plug>(lecodestral-expand)`: Toggle expand (shows full suggestion, not only `g:lecodestral_max_lines`)
+- `<Plug>(lecodestral-cycle-suggestions)`: Cycle to next suggestion
+- `<Plug>(lecodestral-cycle-suggestions-prev)`: Cycle to previous suggestion
+- `<Plug>(lecodestral-cycle-context)`: Cycles through 'preview' (`g:lecodestral_max_lines`), 'full', 'line' and 'word' suggestion option
 - `<Plug>(lecodestral-complete)`: Request completions
 
 You can set your own mappings, e.g.:
 ```vim
 imap <Tab> <Plug>(lecodestral-accept)
 imap <C-]> <Plug>(lecodestral-dismiss)
-imap <C-n> <Plug>(lecodestral-cycle-next)
-imap <C-p> <Plug>(lecodestral-cycle-prev)
-imap <C-e> <Plug>(lecodestral-expand)
+imap <C-n> <Plug>(lecodestral-cycle-suggestions)
+imap <S-Tab> <Plug>(lecodestral-cycle-context)
 imap <S-Space> <Plug>(lecodestral-complete>
 ```
 
@@ -105,7 +104,7 @@ imap <S-Space> <Plug>(lecodestral-complete>
 - `lecodestral#accept()`: Accept the currently displayed suggestion.
 - `lecodestral#complete()`: Trigger a new completion request.
 - `lecodestral#cycle({offset})`: Cycle through available suggestions. Use positive offset to go forward, negative to go backward. 
-- `lecodestral#expand()`: Toggle expanded mode. When enabled, shows all lines of the current suggestion instead of capping at `g:lecodestral_max_lines`.
+- `lecodestral#cycle_context()`: Cycle through context options: preview (shows first N lines based on `g:lecodestral_max_lines`), full (shows entire suggestion), line (shows first line only), word (shows first word only).
 - <small>`lecodestral#on_change()`: Internal function called on cursor movement</small>
 
 ## Configuration

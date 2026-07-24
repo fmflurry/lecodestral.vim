@@ -11,16 +11,15 @@ All notable changes to this project will be documented in this file.
   ```vim
   imap <Tab>      <Plug>(lecodestral-accept)
   imap <C-]>      <Plug>(lecodestral-dismiss)
-  imap <C-n>      <Plug>(lecodestral-cycle-next)
-  imap <C-p>      <Plug>(lecodestral-cycle-prev)
-  imap <C-e>      <Plug>(lecodestral-expand)
+  imap <C-n>      <Plug>(lecodestral-cycle-suggestions)
+  imap <S-Tab>    <Plug>(lecodestral-cycle-context)
   imap <S-Space>  <Plug>(lecodestral-complete)
   ```
 
 ### ✨ Added
 
 - **Multiple suggestions with cycling** — fetches N candidate completions; cycle through them with `:call lecodestral#cycle(1)` / `lecodestral#cycle(-1)` or the `<Plug>` mappings.
-- **Expand/collapse suggestion** — show full suggestion beyond `g:lecodestral_max_lines` via `<Plug>(lecodestral-expand)`.
+- **Cycle context options** — cycle through 'preview', 'full', 'line', and 'word' views via `<Plug>(lecodestral-cycle-context)`.
 
 ### 🔧 Changed
 

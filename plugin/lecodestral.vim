@@ -25,12 +25,12 @@ augroup LeCodestral
   autocmd InsertLeave,BufLeave * call lecodestral#dismiss()
 augroup END
 
-inoremap <silent> <Plug>(lecodestral-complete)   <cmd>call lecodestral#complete()<cr>
-inoremap <silent> <Plug>(lecodestral-accept)     <c-g>u<cmd>call lecodestral#accept()<cr>
-inoremap <silent> <Plug>(lecodestral-dismiss)    <cmd>call lecodestral#dismiss()<cr>
-inoremap <silent> <Plug>(lecodestral-cycle-next) <cmd>call lecodestral#cycle(1)<cr>
-inoremap <silent> <Plug>(lecodestral-cycle-prev) <cmd>call lecodestral#cycle(-1)<cr>
-inoremap <silent> <Plug>(lecodestral-expand)     <cmd>call lecodestral#expand()<cr>
+inoremap <silent> <Plug>(lecodestral-complete)               <cmd>call lecodestral#complete()<cr>
+inoremap <silent> <Plug>(lecodestral-accept)                 <c-g>u<cmd>call lecodestral#accept()<cr>
+inoremap <silent> <Plug>(lecodestral-dismiss)                <cmd>call lecodestral#dismiss()<cr>
+inoremap <silent> <Plug>(lecodestral-cycle-suggestions)      <cmd>call lecodestral#cycle(1)<cr>
+inoremap <silent> <Plug>(lecodestral-cycle-suggestions-prev) <cmd>call lecodestral#cycle(-1)<cr>
+inoremap <silent> <Plug>(lecodestral-cycle-context)          <cmd>call lecodestral#cycle_context()<cr>
 
 command! LeCodestralToggle call lecodestral#toggle()
 command! LeCodestralDismiss call lecodestral#dismiss()

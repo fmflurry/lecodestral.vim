@@ -26,7 +26,8 @@ let s:req_lnum = 0
 let s:req_col = 0
 let s:req_buf = 0
 let s:warned_key = 0
-let s:expand = v:false
+let s:context_options = ['preview', 'full', 'line', 'word']
+let s:context = 'preview'
 
 function! s:clear_ghost() abort
   if s:ghost_active
@@ -63,8 +64,18 @@ function! s:on_out(gen, ch, msg) abort
   call add(s:job_chunks, a:msg)
 endfunction
 
-function! lecodestral#expand() abort
-	let s:expand = !s:expand
+function! lecodestral#cycle_context() abort
+	let l:ghost_lines_len = s:ghost_lines->len()
+	if l:ghost_lines_len > 1
+		let l:curr = s:context_options->index(s:context)
+		let l:idx = (l:curr + 1) % len(s:context_options)
+		if l:ghost_lines_len < s:get('max_lines', 3)
+			let l:idx += 1
+		endif
+		let s:context = s:context_options[l:idx]
+	else 
+		let s:context = s:context ==# 'word' ? 'preview' : 'word'
+	endif
 	call lecodestral#cycle(0)
 endfunction
 
@@ -76,10 +87,21 @@ function! lecodestral#cycle(offset) abort
   endif
   let l:n = len(s:ghost_choices)
   let s:ghost_idx = (s:ghost_idx + a:offset + l:n) % l:n
-  let l:maxl = s:expand ? -1 : s:get('max_lines', 3)
+  let l:maxl = s:context ==# 'full' ? -1 : (s:context ==# 'preview' ? s:get('max_lines', 3) : 1)
   let l:lines = s:ghost_choices[s:ghost_idx]
   if l:maxl > 0
     let l:lines = l:lines[0 : min([l:maxl, l:lines->len()]) - 1]
+  endif
+  if s:context ==# 'word'
+    let l:line = l:lines[0]
+	let l:end = l:line->len()
+	let l:match = l:line->match('\w')
+    if l:match == 0
+		let l:end = l:line->match('\W')
+	elseif l:match > 0
+		let l:end = l:line->match('\W', l:match)
+	endif
+    let l:lines = [l:lines[0]->strpart(0, l:end)]
   endif
   call s:render_ghost(l:lines)
   echo 'LeCodestral suggestion ' . (s:ghost_idx + 1) . '/' . l:n
@@ -252,6 +274,7 @@ function! lecodestral#dismiss() abort
   call s:clear_ghost()
   let s:ghost_choices = []
   let s:ghost_idx = 0
+  let s:context = 'preview'
 endfunction
 
 function! lecodestral#toggle() abort
@@ -273,6 +296,7 @@ function! lecodestral#accept() abort
   endif
   let l:lines = s:ghost_lines
   call s:clear_ghost()
+  let s:context = 'preview'
   let l:lnum = line('.')
   let l:c = col('.')
   let l:cur = getline(l:lnum)

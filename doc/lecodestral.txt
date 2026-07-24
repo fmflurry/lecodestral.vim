@@ -76,17 +76,17 @@ The following <Plug> mappings are available for custom keybindings:
 <Plug>(lecodestral-dismiss)
                        Clear the currently displayed suggestion.
 
-                                                    *<Plug>(lecodestral-cycle-next)*
-<Plug>(lecodestral-cycle-next)
+                                                    *<Plug>(lecodestral-cycle-suggestions)*
+<Plug>(lecodestral-cycle-suggestions)
                        Cycle to the next suggestion.
 
-                                                    *<Plug>(lecodestral-cycle-prev)*
-<Plug>(lecodestral-cycle-prev)
+                                                    *<Plug>(lecodestral-cycle-suggestions-prev)*
+<Plug>(lecodestral-cycle-suggestions-prev)
                        Cycle to the previous suggestion.
 
-                                                    *<Plug>(lecodestral-expand)*
-<Plug>(lecodestral-expand)
-                       Toggle expanded mode (show all lines of suggestion).
+                                                    *<Plug>(lecodestral-cycle-context)*
+<Plug>(lecodestral-cycle-context)
+                       Cycle through context options: preview, full, line, word..
 
 Example: to map <C-Space> to accept suggestions:>
     inoremap <silent> <C-Space> <Plug>(lecodestral-accept)
@@ -122,10 +122,8 @@ lecodestral#cycle({offset})
                            :call lecodestral#cycle(1)
                            :call lecodestral#cycle(-1)
 <
-                                                    *lecodestral#expand()*
-lecodestral#expand()     Toggle expanded mode. When enabled, shows all lines of
-                       the current suggestion instead of capping at
-                       |g:lecodestral_max_lines|.
+                                                    *lecodestral#cycle_context()*
+lecodestral#cycle_context()     Cycle through context options: preview (shows first N lines), full (shows entire suggestion), line (shows first line only), word (shows first word only).
 
 ==============================================================================
 7. CONFIGURATION                                            *lecodestral-config*
