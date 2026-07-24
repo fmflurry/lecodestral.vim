@@ -11,9 +11,10 @@ CONTENTS                                                  *lecodestral-contents*
   3. Setup .................................. |lecodestral-setup|
   4. Usage .................................. |lecodestral-usage|
   5. Commands ............................... |lecodestral-commands|
-  6. Configuration .......................... |lecodestral-config|
-  7. Highlighting ........................... |lecodestral-highlight|
-  8. Limitations ............................ |lecodestral-limitations|
+  6. Mappings ............................... |lecodestral-mappings|
+  7. Configuration .......................... |lecodestral-config|
+  8. Highlighting ........................... |lecodestral-highlight|
+  9. Limitations ............................ |lecodestral-limitations|
 
 ==============================================================================
 1. INTRODUCTION                                       *lecodestral-introduction*
@@ -59,7 +60,75 @@ is visible, <Tab> behaves normally (real tab, or popup-menu navigation).
 :LeCodestralDismiss     Clear the currently displayed suggestion.
 
 ==============================================================================
-6. CONFIGURATION                                            *lecodestral-config*
+6. MAPPINGS                                              *lecodestral-mappings*
+
+The following <Plug> mappings are available for custom keybindings:
+
+                                                    *<Plug>(lecodestral-complete)*
+<Plug>(lecodestral-complete)
+                       Trigger a new completion request.
+
+                                                    *<Plug>(lecodestral-accept)*
+<Plug>(lecodestral-accept)
+                       Accept the currently displayed suggestion.
+
+                                                    *<Plug>(lecodestral-dismiss)*
+<Plug>(lecodestral-dismiss)
+                       Clear the currently displayed suggestion.
+
+                                                    *<Plug>(lecodestral-cycle-next)*
+<Plug>(lecodestral-cycle-next)
+                       Cycle to the next suggestion.
+
+                                                    *<Plug>(lecodestral-cycle-prev)*
+<Plug>(lecodestral-cycle-prev)
+                       Cycle to the previous suggestion.
+
+                                                    *<Plug>(lecodestral-expand)*
+<Plug>(lecodestral-expand)
+                       Toggle expanded mode (show all lines of suggestion).
+
+Example: to map <C-Space> to accept suggestions:>
+    inoremap <silent> <C-Space> <Plug>(lecodestral-accept)
+<
+==============================================================================
+
+==============================================================================
+8. FUNCTIONS                                             *lecodestral-functions*
+
+These functions can be called directly for advanced usage.
+
+                                                    *lecodestral#toggle()*
+lecodestral#toggle()     Toggle the plugin on/off. Same as :LeCodestralToggle.
+
+                                                    *lecodestral#dismiss()*
+lecodestral#dismiss()    Clear the currently displayed suggestion. Same as
+                       :LeCodestralDismiss.
+
+                                                    *lecodestral#accept()*
+lecodestral#accept()     Accept the currently displayed suggestion.
+
+                                                    *lecodestral#complete()*
+lecodestral#complete()   Trigger a new completion request.
+
+                                                    *lecodestral#on_change()*
+lecodestral#on_change()  Internal function called on cursor movement to handle
+                       partial acceptance of suggestions.
+
+                                                    *lecodestral#cycle({offset})*
+lecodestral#cycle({offset})
+                       Cycle through available suggestions. Use positive offset
+                       to go forward, negative to go backward. Example:>
+                           :call lecodestral#cycle(1)
+                           :call lecodestral#cycle(-1)
+<
+                                                    *lecodestral#expand()*
+lecodestral#expand()     Toggle expanded mode. When enabled, shows all lines of
+                       the current suggestion instead of capping at
+                       |g:lecodestral_max_lines|.
+
+==============================================================================
+7. CONFIGURATION                                            *lecodestral-config*
 
 Set these before the plugin loads (e.g. in your vimrc).
 
@@ -115,7 +184,17 @@ g:lecodestral_api_key_env    (default "CODESTRAL_API_KEY")
 
                                                          *g:lecodestral_endpoint*
 g:lecodestral_endpoint
-        (default "https://codestral.mistral.ai/v1/fim/completions")
+        (default "https://api.mistral.ai/v1/fim/completions")
+        The API endpoint URL for Codestral FIM completions.
+
+                                                        *g:lecodestral_choices*
+g:lecodestral_choices      (default 3)
+        Number of completion choices to request from the API. The plugin
+        cycles through these choices when using |lecodestral#cycle()|.
+
+                                                        *g:lecodestral_debug*
+g:lecodestral_debug        (default 0)
+        Enable debug logging to /tmp/lecodestral.log. Set to 1 to enable.
 
 ==============================================================================
 7. HIGHLIGHTING                                          *lecodestral-highlight*
