@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### ✨ Added
 
+- **Popup notification system** — Replaced `echo` output with non-intrusive popups via `s:notify()`. Messages now appear as hoverable tooltips instead of cluttering the terminal.
 - **Multiple suggestions with cycling** — fetches N candidate completions; cycle through them with `:call lecodestral#cycle(1)` / `lecodestral#cycle(-1)` or the `<Plug>` mappings.
 - **Cycle context options** — cycle through 'preview', 'full', 'line', and 'word' views via `<Plug>(lecodestral-cycle-context)`.
 
@@ -27,7 +28,7 @@ All notable changes to this project will be documented in this file.
 - **Docs & config refinements** — updated documentation and configuration options.
 
 
-## [Initial Release]
+## Initial Release
 
 - Ghost-text autocomplete powered by Codestral (Vim 9, `+textprop` + `+job`, zero deps beyond `curl`).
 - Fill-in-the-middle completion: sends code before *and* after the cursor.

@@ -13,6 +13,29 @@ function! s:log(msg) abort
   endif
 endfunction
 
+let s:popup = -1
+function s:notify(msg, highlight= 'Pmenu') abort
+  if (s:popup != -1)
+    call popup_close(s:popup)
+  endif
+  let s:popup= popup_notification(
+    \ [ a:msg ],
+    \ #{
+        \ title: 'LeCodestral',
+        \ line: 'cursor-1',
+        \ col: 'cursor-1',
+        \ pos: 'botleft',
+        \ flip: v:true,
+        \ highlight: a:highlight,
+        \ moved: 'any',
+        \ time: 6000,
+        \ border: [1, 1, 0, 1],
+        \ borderchars: ['–', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+        \ padding: [0, 0, 0, 0],
+    \}
+  \)
+endfunction
+
 let s:enabled = s:get('enabled', 1)
 let s:ghost_lines = []
 let s:ghost_choices = []
@@ -65,24 +88,24 @@ function! s:on_out(gen, ch, msg) abort
 endfunction
 
 function! lecodestral#cycle_context() abort
-	let l:ghost_lines_len = s:ghost_lines->len()
-	if l:ghost_lines_len > 1
-		let l:curr = s:context_options->index(s:context)
-		let l:idx = (l:curr + 1) % len(s:context_options)
-		if l:ghost_lines_len < s:get('max_lines', 3)
-			let l:idx += 1
-		endif
-		let s:context = s:context_options[l:idx]
-	else 
-		let s:context = s:context ==# 'word' ? 'preview' : 'word'
-	endif
-	call lecodestral#cycle(0)
+  let l:ghost_lines_len = s:ghost_lines->len()
+  if l:ghost_lines_len > 1
+    let l:curr = s:context_options->index(s:context)
+    let l:idx = (l:curr + 1) % len(s:context_options)
+    if l:ghost_lines_len < s:get('max_lines', 3)
+      let l:idx += 1
+    endif
+    let s:context = s:context_options[l:idx]
+  else 
+    let s:context = s:context ==# 'word' ? 'preview' : 'word'
+  endif
+  call lecodestral#cycle(0)
 endfunction
 
 function! lecodestral#cycle(offset) abort
   " Cycle to next/prev suggestion (offset +1 or -1). Returns 0 on success.
   if empty(s:ghost_choices)
-    echo 'LeCodestral no suggestions'
+    call s:notify('No suggestions')
     return 1
   endif
   let l:n = len(s:ghost_choices)
@@ -94,17 +117,18 @@ function! lecodestral#cycle(offset) abort
   endif
   if s:context ==# 'word'
     let l:line = l:lines[0]
-	let l:end = l:line->len()
-	let l:match = l:line->match('\w')
+    let l:end = l:line->len()
+    let l:match = l:line->match('\w')
     if l:match == 0
-		let l:end = l:line->match('\W')
-	elseif l:match > 0
-		let l:end = l:line->match('\W', l:match)
-	endif
+        let l:end = l:line->match('\W')
+    elseif l:match > 0
+        let l:end = l:line->match('\W', l:match)
+    endif
     let l:lines = [l:lines[0]->strpart(0, l:end)]
   endif
   call s:render_ghost(l:lines)
-  echo 'LeCodestral suggestion ' . (s:ghost_idx + 1) . '/' . l:n
+  let l:context_text = s:context ==# 'preview' ? 'max '.s:get('max_lines', 3).' lines' : s:context
+  call s:notify('Suggestion ' . (s:ghost_idx + 1) . '/' . l:n . ' (' . l:context_text . ')')
   return 0
 endfunction
 
@@ -176,7 +200,7 @@ function! s:trigger(...) abort
     call s:log('bail: env ' . l:env . ' not set in Vim')
     if !s:warned_key
       let s:warned_key = 1
-      echohl WarningMsg | echom 'LeCodestral: env ' . l:env . ' not set' | echohl None
+      call s:notify('Environment variable `' . l:env . '` not set', 'WarningMsg')
     endif
     return
   endif
@@ -282,7 +306,7 @@ function! lecodestral#toggle() abort
   if !s:enabled
     call s:clear_ghost()
   endif
-  echo 'LeCodestral ' . (s:enabled ? 'enabled' : 'disabled')
+  call s:notify(s:enabled ? 'Enabled' : 'Disabled')
 endfunction
 
 function! lecodestral#accept() abort
