@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] — dev/zap-improvements (in progress)
+## v1.1.0
 
 ### ⚠️ Breaking Changes
 
@@ -28,7 +28,7 @@ All notable changes to this project will be documented in this file.
 - **Docs & config refinements** — updated documentation and configuration options.
 
 
-## Initial Release
+## v1.0.0 (Initial Release)
 
 - Ghost-text autocomplete powered by Codestral (Vim 9, `+textprop` + `+job`, zero deps beyond `curl`).
 - Fill-in-the-middle completion: sends code before *and* after the cursor.

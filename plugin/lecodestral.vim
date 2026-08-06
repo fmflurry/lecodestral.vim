@@ -6,6 +6,7 @@ if exists('g:loaded_lecodestral')
   finish
 endif
 let g:loaded_lecodestral = 1
+let g:lecodestral#version = '1.1.0'
 
 if !has('patch-9.0.0067') || !has('textprop') || !has('job')
   echohl WarningMsg
