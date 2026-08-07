@@ -1,7 +1,7 @@
 " lecodestral.vim — autoload engine. Functions here are globally addressable
 " (lecodestral#...), lazy-loaded, and stable across plugin re-sourcing.
 
-let s:default_endpoint = 'https://codestral.mistral.ai/v1/fim/completions'
+let s:default_endpoint = 'https://api.mistral.ai/v1/fim/completions'
 
 function! s:get(key, default) abort
   return get(g:, 'lecodestral_' . a:key, a:default)
@@ -13,8 +13,33 @@ function! s:log(msg) abort
   endif
 endfunction
 
+let s:popup = -1
+function s:notify(msg, highlight= 'Pmenu') abort
+  if (s:popup != -1)
+    call popup_close(s:popup)
+  endif
+  let s:popup= popup_notification(
+    \ [ a:msg ],
+    \ #{
+        \ title: 'LeCodestral',
+        \ line: 'cursor-1',
+        \ col: 'cursor-1',
+        \ pos: 'botleft',
+        \ flip: v:true,
+        \ highlight: a:highlight,
+        \ moved: 'any',
+        \ time: 6000,
+        \ border: [1, 1, 0, 1],
+        \ borderchars: ['–', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+        \ padding: [0, 0, 0, 0],
+    \}
+  \)
+endfunction
+
 let s:enabled = s:get('enabled', 1)
 let s:ghost_lines = []
+let s:ghost_choices = []
+let s:ghost_idx = 0
 let s:ghost_active = 0
 let s:timer_id = -1
 let s:cur_job = v:null
@@ -24,6 +49,8 @@ let s:req_lnum = 0
 let s:req_col = 0
 let s:req_buf = 0
 let s:warned_key = 0
+let s:context_options = ['preview', 'full', 'line', 'word']
+let s:context = 'preview'
 
 function! s:clear_ghost() abort
   if s:ghost_active
@@ -60,11 +87,58 @@ function! s:on_out(gen, ch, msg) abort
   call add(s:job_chunks, a:msg)
 endfunction
 
+function! lecodestral#cycle_context() abort
+  let l:ghost_lines_len = s:ghost_lines->len()
+  if l:ghost_lines_len > 1
+    let l:curr = s:context_options->index(s:context)
+    let l:idx = (l:curr + 1) % len(s:context_options)
+    if l:ghost_lines_len < s:get('max_lines', 3)
+      let l:idx += 1
+    endif
+    let s:context = s:context_options[l:idx]
+  else 
+    let s:context = s:context ==# 'word' ? 'preview' : 'word'
+  endif
+  call lecodestral#cycle(0)
+endfunction
+
+function! lecodestral#cycle(offset) abort
+  " Cycle to next/prev suggestion (offset +1 or -1). Returns 0 on success.
+  if empty(s:ghost_choices)
+    call s:notify('No suggestions')
+    return 1
+  endif
+  let l:n = len(s:ghost_choices)
+  let s:ghost_idx = (s:ghost_idx + a:offset + l:n) % l:n
+  let l:maxl = s:context ==# 'full' ? -1 : (s:context ==# 'preview' ? s:get('max_lines', 3) : 1)
+  let l:lines = s:ghost_choices[s:ghost_idx]
+  if l:maxl > 0
+    let l:lines = l:lines[0 : min([l:maxl, l:lines->len()]) - 1]
+  endif
+  if s:context ==# 'word'
+    let l:line = l:lines[0]
+    let l:end = l:line->len()
+    let l:match = l:line->match('\w')
+    if l:match == 0
+        let l:end = l:line->match('\W')
+    elseif l:match > 0
+        let l:end = l:line->match('\W', l:match)
+    endif
+    let l:lines = [l:lines[0]->strpart(0, l:end)]
+  endif
+  call s:render_ghost(l:lines)
+  let l:context_text = s:context ==# 'preview' ? 'max '.s:get('max_lines', 3).' lines' : s:context
+  call s:notify('Suggestion ' . (s:ghost_idx + 1) . '/' . l:n . ' (' . l:context_text . ')')
+  return 0
+endfunction
+
 function! s:on_err(gen, ch, msg) abort
   call s:log('ERR ' . a:msg)
 endfunction
 
 function! s:finish(gen, ch) abort
+  let s:ghost_choices = []
+  let s:ghost_idx = 0
   if a:gen != s:gen
     call s:log('bail: stale job gen=' . a:gen . ' cur=' . s:gen)
     return
@@ -93,22 +167,25 @@ function! s:finish(gen, ch) abort
     call s:log('bail: no choices. raw=' . l:raw[0:300])
     return
   endif
-  let l:ch0 = l:data.choices[0]
-  let l:text = ''
-  if has_key(l:ch0, 'message') && type(l:ch0.message) == v:t_dict && has_key(l:ch0.message, 'content')
-    let l:text = l:ch0.message.content
-  elseif has_key(l:ch0, 'text')
-    let l:text = l:ch0.text
-  endif
-  if l:text ==# ''
+  let l:texts = []
+  for l:choice in l:data.choices
+    let l:text = ''
+    if has_key(l:choice, 'message') && type(l:choice.message) == v:t_dict && has_key(l:choice.message, 'content')
+      let l:text = l:choice.message.content
+    elseif has_key(l:choice, 'text')
+      let l:text = l:choice.text
+    endif
+    if l:text ==# '' || l:texts->index(l:text) >= 0
+      continue
+    endif
+    call add(l:texts, l:text)
+    let l:lines = split(l:text, "\n", 1)
+    call add(s:ghost_choices, l:lines)
+  endfor
+  if empty(s:ghost_choices)
     return
   endif
-  let l:lines = split(l:text, "\n", 1)
-  let l:maxl = s:get('max_lines', 3)
-  if l:maxl > 0 && len(l:lines) > l:maxl
-    let l:lines = l:lines[0 : l:maxl - 1]
-  endif
-  call s:render_ghost(l:lines)
+  call lecodestral#cycle(0)
 endfunction
 
 function! s:trigger(...) abort
@@ -123,7 +200,7 @@ function! s:trigger(...) abort
     call s:log('bail: env ' . l:env . ' not set in Vim')
     if !s:warned_key
       let s:warned_key = 1
-      echohl WarningMsg | echom 'LeCodestral: env ' . l:env . ' not set' | echohl None
+      call s:notify('Environment variable `' . l:env . '` not set', 'WarningMsg')
     endif
     return
   endif
@@ -177,6 +254,7 @@ function! s:trigger(...) abort
         \ 'max_tokens': s:get('max_tokens', 256),
         \ 'temperature': s:get('temperature', 0.2),
         \ 'stream': v:false,
+        \ 'n': s:get('choices', 3),
         \ }
   let l:stop = s:get('stop', ["\n\n\n"])
   if type(l:stop) == v:t_list && !empty(l:stop)
@@ -205,6 +283,10 @@ function! lecodestral#on_change() abort
   if !s:enabled
     return
   endif
+  return lecodestral#complete()
+endfunction
+" Trigger completion (force if not enabled?)
+function! lecodestral#complete() abort
   call s:clear_ghost()
   if s:timer_id != -1
     call timer_stop(s:timer_id)
@@ -212,12 +294,11 @@ function! lecodestral#on_change() abort
   let s:timer_id = timer_start(s:get('debounce_ms', 150), function('s:trigger'))
 endfunction
 
-function! lecodestral#on_leave() abort
-  call s:clear_ghost()
-endfunction
-
 function! lecodestral#dismiss() abort
   call s:clear_ghost()
+  let s:ghost_choices = []
+  let s:ghost_idx = 0
+  let s:context = 'preview'
 endfunction
 
 function! lecodestral#toggle() abort
@@ -225,11 +306,11 @@ function! lecodestral#toggle() abort
   if !s:enabled
     call s:clear_ghost()
   endif
-  echo 'LeCodestral ' . (s:enabled ? 'enabled' : 'disabled')
+  call s:notify(s:enabled ? 'Enabled' : 'Disabled')
 endfunction
 
 function! lecodestral#accept() abort
-  if !s:ghost_active
+  if empty(s:ghost_choices) && !s:ghost_active
     if pumvisible()
       call feedkeys("\<C-n>", 'n')
     else
@@ -237,8 +318,9 @@ function! lecodestral#accept() abort
     endif
     return
   endif
-  let l:lines = copy(s:ghost_lines)
+  let l:lines = s:ghost_lines
   call s:clear_ghost()
+  let s:context = 'preview'
   let l:lnum = line('.')
   let l:c = col('.')
   let l:cur = getline(l:lnum)
