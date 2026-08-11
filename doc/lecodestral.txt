@@ -1,10 +1,10 @@
-*lecodestral.txt*  Inline ghost-text autocomplete for Vim 9 via Mistral Codestral
+*lecodestral.txt*  Vim 9 ghost-text via DeepSeek FIM (beta)
 
 Author:  Florian Michel (fmflurry)
 License: MIT
 
 ==============================================================================
-CONTENTS                                                  *lecodestral-contents*
+CONTENTS                                          *lecodestral-contents*
 
   1. Introduction ........................... |lecodestral-introduction|
   2. Requirements ........................... |lecodestral-requirements|
@@ -16,68 +16,70 @@ CONTENTS                                                  *lecodestral-contents*
   8. Limitations ............................ |lecodestral-limitations|
 
 ==============================================================================
-1. INTRODUCTION                                       *lecodestral-introduction*
+1. INTRODUCTION                                   *lecodestral-introduction*
 
 lecodestral.vim provides Copilot-style inline ghost-text autocomplete for
-classic Vim 9, powered by Mistral Codestral through its fill-in-the-middle
-(FIM) endpoint. It uses native virtual text (|textprop|) and async jobs
-(|job|); it needs no Neovim and no Node, only `curl`.
+classic Vim 9, powered by DeepSeek FIM (beta). It uses native virtual text
+(|textprop|) and async jobs (|job|); it needs no Neovim and no Node, only
+`curl`.
 
 ==============================================================================
-2. REQUIREMENTS                                       *lecodestral-requirements*
+2. REQUIREMENTS                                   *lecodestral-requirements*
 
 - Vim 9.0.0067+ with |+textprop| and |+job|
   Check with: >
       :echo has('patch-9.0.0067') && has('textprop') && has('job')
 <
 - `curl` on $PATH
-- A Codestral API key (free tier at https://console.mistral.ai)
+- A DeepSeek API key from https://platform.deepseek.com
 
 ==============================================================================
-3. SETUP                                                     *lecodestral-setup*
+3. SETUP                                              *lecodestral-setup*
 
 Export your API key in the shell that launches Vim: >
 
-      export CODESTRAL_API_KEY="your-key-here"
+      export DEEPSEEK_API_KEY="your-key-here"
 <
 The variable name is configurable, see |g:lecodestral_api_key_env|.
 
 ==============================================================================
-4. USAGE                                                     *lecodestral-usage*
+4. USAGE                                              *lecodestral-usage*
 
 Type in insert mode. After a short debounce a grey suggestion appears after
 the cursor. Press <Tab> to accept it, or <C-]> to dismiss. When no suggestion
 is visible, <Tab> behaves normally (real tab, or popup-menu navigation).
 
 ==============================================================================
-5. COMMANDS                                               *lecodestral-commands*
+5. COMMANDS                                         *lecodestral-commands*
 
-                                                              *:LeCodestralToggle*
+                                                        *:LeCodestralToggle*
 :LeCodestralToggle      Enable or disable suggestions for the session.
 
-                                                             *:LeCodestralDismiss*
+                                                       *:LeCodestralDismiss*
 :LeCodestralDismiss     Clear the currently displayed suggestion.
 
 ==============================================================================
-6. CONFIGURATION                                            *lecodestral-config*
+6. CONFIGURATION                                    *lecodestral-config*
 
 Set these before the plugin loads (e.g. in your vimrc).
 
-                                                          *g:lecodestral_enabled*
+                                                      *g:lecodestral_enabled*
 g:lecodestral_enabled        (default v:true)
         Start with suggestions enabled.
 
-                                                            *g:lecodestral_model*
-g:lecodestral_model          (default "codestral-latest")
+                                                        *g:lecodestral_model*
+g:lecodestral_model          (default "deepseek-v4-flash")
 
-                                                      *g:lecodestral_debounce_ms*
-g:lecodestral_debounce_ms    (default 150)
+                                                   *g:lecodestral_debounce_ms*
+g:lecodestral_debounce_ms    (default 50)
         Idle time in ms after a keystroke before a request fires.
 
-                                                       *g:lecodestral_max_tokens*
+                                                    *g:lecodestral_max_tokens*
 g:lecodestral_max_tokens     (default 256)
+        DeepSeek FIM has a maximum completion length of 4096 tokens. Values
+        above 4096 are clamped to the limit.
 
-                                                        *g:lecodestral_max_lines*
+                                                    *g:lecodestral_max_lines*
 g:lecodestral_max_lines      (default 3)
         Maximum number of lines shown in a single ghost-text suggestion.
         The model often keeps generating well past the useful completion,
@@ -85,51 +87,54 @@ g:lecodestral_max_lines      (default 3)
         to the first few lines keeps quality high. Set to 0 to disable the
         cap and show the full response.
 
-                                                       *g:lecodestral_max_prefix*
+                                                    *g:lecodestral_max_prefix*
 g:lecodestral_max_prefix     (default 8000)
         Max bytes of pre-cursor context sent as the FIM prompt. When the
         prefix is trimmed, it is realigned to the next line boundary so the
         prompt never begins mid-line.
 
-                                                       *g:lecodestral_max_suffix*
+                                                    *g:lecodestral_max_suffix*
 g:lecodestral_max_suffix     (default 4000)
         Max bytes of post-cursor context sent as the FIM suffix. When the
         suffix is trimmed, it is realigned to the previous line boundary so
         the suffix never ends mid-line.
 
-                                                      *g:lecodestral_temperature*
+                                                   *g:lecodestral_temperature*
 g:lecodestral_temperature    (default 0.2)
 
-                                                             *g:lecodestral_stop*
+                                                        *g:lecodestral_stop*
 g:lecodestral_stop           (default ["\n\n\n"])
         List of stop sequences sent to the FIM endpoint. Guards against
-        runaway multi-block completions. Set to [] to disable.
+        runaway multi-block completions. Set to [] to disable. DeepSeek FIM
+        accepts at most 16 sequences; longer lists are truncated.
 
-                                                       *g:lecodestral_accept_key*
+                                                    *g:lecodestral_accept_key*
 g:lecodestral_accept_key     (default "<Tab>")
         Insert-mode key mapped to accept a suggestion.
 
-                                                      *g:lecodestral_api_key_env*
-g:lecodestral_api_key_env    (default "CODESTRAL_API_KEY")
+                                                   *g:lecodestral_api_key_env*
+g:lecodestral_api_key_env    (default "DEEPSEEK_API_KEY")
         Name of the environment variable holding the API key.
 
-                                                         *g:lecodestral_endpoint*
+                                                      *g:lecodestral_endpoint*
 g:lecodestral_endpoint
-        (default "https://codestral.mistral.ai/v1/fim/completions")
+        (default "https://api.deepseek.com/beta/completions")
 
 ==============================================================================
-7. HIGHLIGHTING                                          *lecodestral-highlight*
+7. HIGHLIGHTING                                     *lecodestral-highlight*
 
-                                                            *hl-LeCodestralGhost*
+                                                       *hl-LeCodestralGhost*
 Ghost text uses the LeCodestralGhost highlight group, linked to Comment by
 default. Override it: >
 
       highlight LeCodestralGhost ctermfg=245 guifg=#6c7086
 <
 ==============================================================================
-8. LIMITATIONS                                         *lecodestral-limitations*
+8. LIMITATIONS                                      *lecodestral-limitations*
 
-- Free Codestral keys are rate-limited.
+- Concurrency limits: 2500 for deepseek-v4-flash, 500 for deepseek-v4-pro.
+  HTTP 429 returned on overflow; under load the API may hold the connection
+  open returning empty lines instead of rejecting.
 - No streaming; one request per debounce window.
 - Suggestions only appear in insert mode.
 

@@ -1,5 +1,5 @@
 " lecodestral.vim — Copilot-style inline autocomplete for classic Vim 9 via
-" Mistral Codestral (FIM). Grey ghost text after the cursor; <Tab> accepts.
+" DeepSeek FIM (beta). Grey ghost text after the cursor; <Tab> accepts.
 " Logic lives in autoload/lecodestral.vim (stable across re-sourcing).
 
 if exists('g:loaded_lecodestral')

@@ -1,7 +1,9 @@
 " lecodestral.vim — autoload engine. Functions here are globally addressable
 " (lecodestral#...), lazy-loaded, and stable across plugin re-sourcing.
 
-let s:default_endpoint = 'https://codestral.mistral.ai/v1/fim/completions'
+let s:default_endpoint = 'https://api.deepseek.com/beta/completions'
+let s:max_tokens_ceiling = 4096
+let s:stop_limit = 16
 
 function! s:get(key, default) abort
   return get(g:, 'lecodestral_' . a:key, a:default)
@@ -78,7 +80,7 @@ function! s:finish(gen, ch) abort
     call s:log('bail: not insert mode (' . mode() . ')')
     return
   endif
-  let l:raw = join(s:job_chunks, '')
+  let l:raw = trim(join(s:job_chunks, ''))
   if l:raw ==# ''
     call s:log('bail: empty response')
     return
@@ -95,9 +97,7 @@ function! s:finish(gen, ch) abort
   endif
   let l:ch0 = l:data.choices[0]
   let l:text = ''
-  if has_key(l:ch0, 'message') && type(l:ch0.message) == v:t_dict && has_key(l:ch0.message, 'content')
-    let l:text = l:ch0.message.content
-  elseif has_key(l:ch0, 'text')
+  if has_key(l:ch0, 'text')
     let l:text = l:ch0.text
   endif
   if l:text ==# ''
@@ -117,7 +117,7 @@ function! s:trigger(...) abort
     return
   endif
   call s:log('trigger fired')
-  let l:env = s:get('api_key_env', 'CODESTRAL_API_KEY')
+  let l:env = s:get('api_key_env', 'DEEPSEEK_API_KEY')
   let l:key = getenv(l:env)
   if type(l:key) != v:t_string || l:key ==# ''
     call s:log('bail: env ' . l:env . ' not set in Vim')
@@ -171,15 +171,18 @@ function! s:trigger(...) abort
   endif
 
   let l:payload = {
-        \ 'model': s:get('model', 'codestral-latest'),
+        \ 'model': s:get('model', 'deepseek-v4-flash'),
         \ 'prompt': l:prefix,
         \ 'suffix': l:suffix,
-        \ 'max_tokens': s:get('max_tokens', 256),
+        \ 'max_tokens': min([s:get('max_tokens', 256), s:max_tokens_ceiling]),
         \ 'temperature': s:get('temperature', 0.2),
         \ 'stream': v:false,
         \ }
   let l:stop = s:get('stop', ["\n\n\n"])
   if type(l:stop) == v:t_list && !empty(l:stop)
+    if len(l:stop) > s:stop_limit
+      let l:stop = l:stop[0 : s:stop_limit - 1]
+    endif
     let l:payload.stop = l:stop
   endif
   let l:body = json_encode(l:payload)
@@ -209,7 +212,7 @@ function! lecodestral#on_change() abort
   if s:timer_id != -1
     call timer_stop(s:timer_id)
   endif
-  let s:timer_id = timer_start(s:get('debounce_ms', 150), function('s:trigger'))
+  let s:timer_id = timer_start(s:get('debounce_ms', 50), function('s:trigger'))
 endfunction
 
 function! lecodestral#on_leave() abort
